@@ -8,7 +8,7 @@ KeyNote 是一款面向技术人员的技能树知识管理和职业发展平台
 
 **平台**：Web 应用（响应式，支持桌面 + 平板 + 手机）
 
-**技术栈**：Next15 + React 19 + TypeScript + Tailwind CSS 
+**技术栈**：Next16.1.6 + React 19.2.4 + TypeScript + shadcn ui
 
 ---
 
