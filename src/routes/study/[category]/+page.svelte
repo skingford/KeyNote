@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { scale } from 'svelte/transition';
-	import { cubicIn, cubicOut } from 'svelte/easing';
+	import { quintOut } from 'svelte/easing';
 	import QuestionCard from '$lib/components/QuestionCard.svelte';
 	import { invalidateAll } from '$app/navigation';
 
@@ -64,52 +64,37 @@
 		}
 	}
 
-	function handleRestart() {
+	function handleRestartRound() {
 		currentIndex = 0;
-		invalidateAll(); // refresh data from server
+	}
+
+	async function handleRefreshPlan() {
+		currentIndex = 0;
+		await invalidateAll(); // refresh data from server
 	}
 
 	function pageTurnIn(node: Element, params: { direction: number }) {
-		const direction = params.direction ?? 1;
-		
-		// If going Next (direction = 1), new page flips in from the Right.
-		// If going Prev (direction = -1), new page flips in from the Left.
-		const fromAngle = direction > 0 ? 60 : -60;
-		const fromX = direction > 0 ? 80 : -80;
-		(node as HTMLElement).style.transformOrigin = 'center center';
-
+		const d = params.direction ?? 1;
 		return {
-			duration: 500,
-			easing: cubicOut,
+			duration: 1000,
+			easing: quintOut,
 			css: (t: number, u: number) => `
-				transform:
-					translate3d(${u * fromX}px, 0, 100px)
-					rotateY(${u * fromAngle}deg)
-					scale(${0.95 + t * 0.05});
-				opacity: ${0 + t * 1};
-				filter: blur(${u * 2}px);
+				transform: translate3d(${u * d * 40}px, 0, ${-u * 300}px) rotateY(${u * d * -20}deg);
+				opacity: ${t};
+				filter: brightness(${0.5 + t * 0.5}) blur(${u * 1}px);
 			`
 		};
 	}
 
 	function pageTurnOut(node: Element, params: { direction: number }) {
-		const direction = params.direction ?? 1;
-		// If going Next (direction = 1), old page flips out to the Left.
-		// If going Prev (direction = -1), old page flips out to the Right.
-		const toAngle = direction > 0 ? -60 : 60;
-		const toX = direction > 0 ? -80 : 80;
-		(node as HTMLElement).style.transformOrigin = 'center center';
-
+		const d = params.direction ?? 1;
 		return {
-			duration: 400,
-			easing: cubicIn,
+			duration: 800,
+			easing: quintOut,
 			css: (t: number, u: number) => `
-				transform:
-					translate3d(${u * toX}px, 0, 100px)
-					rotateY(${u * toAngle}deg)
-					scale(${1 - u * 0.05});
-				opacity: ${0 + t * 1};
-				filter: blur(${u * 2}px);
+				transform: translate3d(${u * d * -40}px, 0, ${-u * 300}px) rotateY(${u * d * 20}deg);
+				opacity: ${t};
+				filter: brightness(${0.5 + t * 0.5}) blur(${u * 1}px);
 			`
 		};
 	}
@@ -190,39 +175,18 @@
 				<p class="text-secondary mb-8 text-lg">您已完成这 <span class="text-primary font-bold">{totalQuestions}</span> 道架构题的复习，稍后再来看看其他题目吧。</p>
 				<div class="flex flex-col sm:flex-row gap-4 justify-center">
 					<a href="/" class="px-6 py-4 rounded-xl bg-surface hover:bg-surface-hover transition-colors font-bold border border-white/10 text-primary w-full sm:w-auto">回书架页</a>
-					<button onclick={handleRestart} class="px-8 py-4 rounded-xl bg-accent hover:bg-accent-hover text-base transition-colors font-bold shadow-lg shadow-accent/20 cursor-pointer text-base-content w-full sm:w-auto">
-						重新翻阅
+					<button onclick={handleRestartRound} class="px-8 py-4 rounded-xl bg-accent hover:bg-accent-hover text-base transition-colors font-bold shadow-lg shadow-accent/20 cursor-pointer text-base-content w-full sm:w-auto">
+						重头开始本轮
+					</button>
+					<button onclick={handleRefreshPlan} class="px-8 py-4 rounded-xl bg-surface hover:bg-surface-hover text-base transition-colors font-bold border border-white/10 cursor-pointer w-full sm:w-auto">
+						刷新复习计划
 					</button>
 				</div>
 			</div>
 		{:else}
-			{#key currentQuestion.id}
-				<div class="book-viewport relative w-full h-[600px] flex justify-center">
-					<div
-						class="book-page absolute w-full px-4 md:px-0"
-						in:pageTurnIn={{ direction: navDirection }}
-						out:pageTurnOut={{ direction: navDirection }}
-					>
-						<QuestionCard question={currentQuestion} onReview={handleReview} />
-					</div>
-				</div>
-			{/key}
+			<div class="w-full flex justify-center">
+				<QuestionCard question={currentQuestion} onReview={handleReview} />
+			</div>
 		{/if}
 	</div>
 </div>
-
-<style>
-	.book-viewport {
-		perspective: 2500px;
-		perspective-origin: center center;
-		transform-style: preserve-3d;
-	}
-
-	.book-page {
-		transform-style: preserve-3d;
-		will-change: transform, opacity, filter;
-		/* Ensure smooth backface hidden or smooth antialiasing when rotating */
-		-webkit-font-smoothing: antialiased;
-		transform: translateZ(0); 
-	}
-</style>

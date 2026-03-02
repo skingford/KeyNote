@@ -1,5 +1,6 @@
 <script lang="ts">
 	import MarkdownView from './MarkdownView.svelte';
+	import { untrack } from 'svelte';
 
 	let {
 		question,
@@ -9,181 +10,229 @@
 		onReview?: (rating: number) => void;
 	}>();
 
-	let showAnswer = $state(false);
-	let answerContent = $derived((question.answer ?? '').trim());
+	// INTERNAL DATA
+	let displayedQuestion = $state(question);
+	
+	// ANIMATION STATES
+	let showAnswer = $state(false); // Base Leaf (Reveal/Hide Answer)
+	let isNextFlipping = $state(false); // Transition Leaf (Move to Next)
+	let resetTransitionLeaf = $state(false); // For instant reset without jump
 
-	function handleReview(rating: number) {
-		onReview(rating);
+	// Prop Sync
+	$effect(() => {
+		const newId = question.id;
+		untrack(() => {
+			if (newId !== displayedQuestion.id && !isNextFlipping) {
+				displayedQuestion = question;
+				showAnswer = false;
+			}
+		});
+	});
+
+	async function handleReview(rating: number) {
+		if (isNextFlipping) return;
+		
+		// 1. START FLIP
+		isNextFlipping = true;
+
+		// 2. MID-POINT (Wait for sheet to be vertical)
+		setTimeout(() => {
+			onReview(rating);
+			displayedQuestion = question;
+			
+			// Reset the 'Reveal Leaf' while hidden
+			showAnswer = false;
+			
+			// 3. COMPLETE FLIP
+			setTimeout(() => {
+				isNextFlipping = false;
+				// 4. INSTANT RESET (Hide the move back)
+				resetTransitionLeaf = true;
+				setTimeout(() => {
+					resetTransitionLeaf = false;
+				}, 50);
+			}, 500);
+		}, 500);
 	}
+
+	function handleReveal() {
+		if (isNextFlipping) return;
+		showAnswer = true;
+	}
+
+	let answerContent = $derived((displayedQuestion.answer ?? '').trim());
 </script>
 
-<div class="book-wrapper w-full max-w-4xl h-[550px] mx-auto relative preserve-3d perspective">
+<div class="book-container w-full max-w-5xl h-[600px] mx-auto relative perspective py-4">
 	
-	<!-- Book Background Spread -->
-	<!-- Left Base Page (Pastel Pink) -->
-	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d rotate-left-base z-0">
-		<div class="book-page page-front bg-[#fcdede] dark:bg-[#4a2e35] rounded-l-2xl border border-black/10 dark:border-white/10 p-8 flex flex-col items-center justify-center overflow-hidden">
-			<!-- Cute graphic or prompt -->
-			<div class="opacity-50 flex flex-col items-center gap-4 text-primary">
-				<div class="text-7xl font-serif font-black italic mb-2 brightness-90">?</div>
-				<p class="font-medium tracking-[0.2em] uppercase text-sm font-sans">Thinking Mode</p>
-			</div>
-		</div>
-	</div>
-
-	<!-- Right Base Page (Pastel Mint/Teal - Answer Page) -->
-	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d z-0">
-		<div class="book-page page-front bg-[#c1ede4] dark:bg-[#20403c] rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 pt-6 md:pt-8 pl-6 md:pl-8 pb-6 md:pb-8 pr-0 flex flex-col">
-			<h3 class="text-xs text-secondary/80 uppercase tracking-widest font-bold mb-4 flex items-center gap-2 pr-6 md:pr-8">
-				<span class="w-2 h-2 rounded-full bg-success opacity-80 animate-pulse"></span>
-				参考答案 (Answer)
-			</h3>
-			
-			<div class="grow overflow-y-auto custom-scrollbar">
-				<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 pr-6 md:pr-8">
-					{#if answerContent.length > 0}
-						<MarkdownView content={answerContent} />
-					{:else}
-						<p class="text-secondary/70 italic text-sm">该题暂未配置答案内容。</p>
-					{/if}
+	<!-- STATIC SPREAD -->
+	<div class="book-spread absolute inset-x-0 top-4 bottom-4 flex preserve-3d">
+		<!-- Left Page -->
+		<div class="book-page-left flex-1 bg-white dark:bg-[#2c2c30] rounded-l-2xl border-y border-l border-black/10 dark:border-white/10 shadow-[-15px_15px_45px_rgba(0,0,0,0.15)] p-10 flex flex-col relative overflow-hidden">
+			<div class="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-accent/30 to-transparent"></div>
+			<div class="flex justify-between items-start mb-8 text-[10px] font-mono text-secondary/40 uppercase tracking-widest">
+				<span>Current Chapter</span>
+				<div class="flex gap-3">
+					<span class="text-accent/60 font-black">S{displayedQuestion.state}</span>
+					<span class="opacity-20">|</span>
+					<span>R{displayedQuestion.reps}</span>
 				</div>
 			</div>
-
-			<!-- Review Actions -->
-			<div class="mt-6 pt-4 border-t border-black/10 dark:border-white/10 flex flex-col gap-3 z-20 pr-6 md:pr-8">
-				<div class="text-[11px] text-center text-secondary/70 mb-1 font-bold tracking-wider uppercase">评估掌握程度，并进入下一题</div>
-				<div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-					<button onclick={() => handleReview(1)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 transition-all hover:scale-[1.03]">
-						<span class="font-bold text-sm">重来</span><span class="text-[9px] opacity-70">Again</span>
-					</button>
-					<button onclick={() => handleReview(2)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-warning/10 hover:bg-warning/20 text-warning border border-warning/20 transition-all hover:scale-[1.03]">
-						<span class="font-bold text-sm">困难</span><span class="text-[9px] opacity-70">Hard</span>
-					</button>
-					<button onclick={() => handleReview(3)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-success/10 hover:bg-success/20 text-success border border-success/20 transition-all hover:scale-[1.03]">
-						<span class="font-bold text-sm">良好</span><span class="text-[9px] opacity-70">Good</span>
-					</button>
-					<button onclick={() => handleReview(4)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-info/10 hover:bg-info/20 text-info border border-info/20 transition-all hover:scale-[1.03]">
-						<span class="font-bold text-sm">简单</span><span class="text-[9px] opacity-70">Easy</span>
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- 翻动的书叶 (Flipping Leaf) -->
-	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d transition-transform duration-800 ease-in-out z-10 {showAnswer ? 'is-flipped' : ''}">
-		
-		<!-- 叶片正面: 题目 (Front of the leaf: Question) -->
-		<div class="book-page page-front bg-[#ffffff] dark:bg-[#2c2c30] rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 shadow-[8px_5px_20px_rgba(0,0,0,0.08)] pt-6 md:pt-8 pl-6 md:pl-8 pb-6 md:pb-8 pr-0 flex flex-col">
-			<div class="flex justify-between items-start mb-6 pr-6 md:pr-8">
-				<div class="px-2.5 py-1 text-[10px] font-mono rounded bg-black/5 dark:bg-white/10 text-secondary uppercase tracking-wider">
-					Study Card
-				</div>
-				<div class="text-[10px] font-mono text-secondary/60 uppercase tracking-widest flex gap-2">
-					<span class="text-primary/70 font-semibold">S{question.state}</span>
-					<span>•</span>
-					<span>R{question.reps}</span>
-				</div>
-			</div>
-
-			<div class="pr-6 md:pr-8">
-				<h2 class="text-xl md:text-2xl font-bold mb-6 tracking-tight leading-snug text-gray-900 dark:text-gray-100 font-serif">
-					{question.title}
-				</h2>
-			</div>
-			
-			<div class="grow overflow-y-auto custom-scrollbar">
-				{#if question.content && question.content.trim().length > 0}
-					<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 pr-6 md:pr-8">
-						<MarkdownView content={question.content} />
+			<h2 class="text-2xl md:text-3xl font-bold mb-8 tracking-tight leading-tight text-gray-900 dark:text-gray-100 font-serif">
+				{displayedQuestion.title}
+			</h2>
+			<div class="grow overflow-y-auto no-scrollbar pr-4">
+				{#if displayedQuestion.content && displayedQuestion.content.trim().length > 0}
+					<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed">
+						<MarkdownView content={displayedQuestion.content} />
 					</div>
 				{/if}
 			</div>
+			<div class="absolute inset-0 bg-black/15 pointer-events-none transition-opacity duration-500 {showAnswer ? 'opacity-100' : 'opacity-0'}"></div>
+		</div>
 
-			<div class="mt-6 pt-4 border-t border-black/5 dark:border-white/5 flex justify-center pr-6 md:pr-8">
-				<button
-					class="px-8 py-3.5 rounded-full bg-[#111] dark:bg-white text-white dark:text-black font-bold shadow-lg transition-all hover:-translate-y-1 hover:scale-105 active:scale-95 flex items-center gap-3 group"
-					onclick={() => (showAnswer = true)}
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform group-hover:translate-x-1 duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-					翻书查看答案
+		<!-- Right Page -->
+		<div class="book-page-right flex-1 bg-[#fefefe] dark:bg-[#252529] rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 shadow-[15px_15px_45px_rgba(0,0,0,0.15)] p-10 flex flex-col relative">
+			<div class="flex items-center gap-3 mb-6">
+				<span class="w-2 h-2 rounded-full bg-success opacity-50 animate-pulse"></span>
+				<h3 class="text-xs text-secondary/70 uppercase tracking-[0.3em] font-bold">参考解析</h3>
+			</div>
+			<div class="grow overflow-y-auto custom-scrollbar pr-6 -mr-10">
+				<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-800 dark:text-gray-200">
+					{#if answerContent.length > 0}
+						<MarkdownView content={answerContent} />
+					{:else}
+						<p class="text-secondary/50 italic text-sm">此章节内容由于正在完善，暂不可见。</p>
+					{/if}
+				</div>
+			</div>
+			<!-- Controls Area -->
+			<div class="mt-8 pt-8 border-t border-black/10 dark:border-white/10 flex flex-col gap-6 z-20 pr-5 transition-all duration-500 {showAnswer ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'}">
+				<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+					{#each [1, 2, 3, 4] as rating}
+						<button 
+							onclick={() => handleReview(rating)} 
+							class="group/btn flex flex-col items-center justify-center py-5 px-2 rounded-2xl transition-all duration-300 hover:-translate-y-2 active:scale-95 border-b-4 
+								{rating === 1 ? 'bg-danger/5 text-danger border-danger/20 hover:bg-danger/10' : ''}
+								{rating === 2 ? 'bg-warning/5 text-warning border-warning/20 hover:bg-warning/10' : ''}
+								{rating === 3 ? 'bg-success/5 text-success border-success/20 hover:bg-success/10' : ''}
+								{rating === 4 ? 'bg-info/5 text-info border-info/20 hover:bg-info/10' : ''}
+							"
+						>
+							<span class="font-black text-sm mb-1">{['重来', '困难', '良好', '简单'][rating-1]}</span>
+							<span class="text-[9px] opacity-40 font-mono tracking-tighter uppercase group-hover/btn:opacity-100 transition-opacity">{['Again', 'Hard', 'Good', 'Easy'][rating-1]}</span>
+						</button>
+					{/each}
+				</div>
+			</div>
+			<div class="absolute inset-0 bg-black/10 pointer-events-none transition-opacity duration-500 {!showAnswer ? 'opacity-100' : 'opacity-0'}"></div>
+		</div>
+	</div>
+
+	<!-- THE SYSTEM LEAVES (Always in DOM for smoothness) -->
+	
+	<!-- LEAF 1: Internal Reveal (Normal Study Flip) -->
+	<div class="leaf leaf-reveal absolute w-1/2 h-[568px] right-0 top-[20px] origin-left preserve-3d z-[100] 
+		{showAnswer ? 'is-flipped' : ''} {isNextFlipping ? 'invisible-jump' : ''}"
+		style="transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1);">
+		
+		<div class="leaf-side leaf-front bg-linear-to-br from-[#ffffff] to-[#f4f4f4] dark:from-[#35353a] dark:to-[#25252a] rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 flex flex-col items-center justify-center p-12">
+			<div class="flex flex-col items-center gap-10 transition-opacity duration-300 {!showAnswer && !isNextFlipping ? 'opacity-100' : 'opacity-0'}">
+				<div class="w-16 h-16 rounded-full bg-accent/10 border-2 border-dashed border-accent/30 flex items-center justify-center animate-spin-extra-slow">
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-accent/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+				</div>
+				<button class="px-12 py-5 rounded-full bg-accent hover:bg-accent-hover text-white font-black shadow-2xl shadow-accent/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-4 group" onclick={handleReveal}>
+					<span class="tracking-[0.2em]">REVEAL CONTENT</span>
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transition-transform group-hover:translate-x-1.5 duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
 				</button>
 			</div>
 		</div>
 
-		<!-- 叶片背面 (Back of the leaf) -->
-		<div class="book-page page-back bg-[#fcfaf2] dark:bg-[#25252a] rounded-l-2xl border-y border-l border-black/10 dark:border-white/10 shadow-[-8px_5px_20px_rgba(0,0,0,0.08)] p-8 flex flex-col items-center justify-center gap-6">
-			<div class="w-16 h-16 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center">
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-secondary opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M18 3v18"/><path d="M6 3h12"/><path d="M6 21h12"/><path d="M9 12h6"/></svg>
+		<div class="leaf-side leaf-back bg-linear-to-bl from-white to-[#fdfdfd] dark:from-[#2c2c30] dark:to-[#1c1c20] rounded-l-2xl border-y border-l border-black/10 dark:border-white/10 flex flex-col p-12 shadow-inner">
+			<div class="grow flex flex-col items-center justify-center opacity-30 gap-8 text-center grayscale">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <p class="text-[11px] uppercase tracking-[0.6em] font-bold text-accent">Review Processed</p>
 			</div>
-			<div class="opacity-40 text-center font-serif text-secondary max-w-xs">
-				<p class="text-xs uppercase tracking-[0.2em] mb-3 font-sans opacity-70">Question Details</p>
-				<h3 class="text-lg italic line-clamp-4 leading-relaxed">"{question.title}"</h3>
-			</div>
-			
-			<button class="mt-8 px-5 py-2 rounded-full border border-black/20 dark:border-white/20 text-secondary hover:bg-black/5 dark:hover:bg-white/5 text-xs tracking-wider uppercase transition font-semibold" onclick={() => showAnswer = false}>
-				← 翻转回题目
-			</button>
+			<button class="mt-auto self-center text-[10px] uppercase font-bold tracking-[0.4em] text-secondary/40 hover:text-accent transition-all duration-300" onclick={() => showAnswer = false}>← RETURN</button>
 		</div>
 	</div>
 
-	<!-- Book Spine Highlight/Shadow -->
-	<div class="absolute left-1/2 top-0 bottom-0 w-8 -ml-4 bg-linear-to-r from-transparent via-black/15 dark:via-black/40 to-transparent pointer-events-none z-20 mix-blend-multiply border-x border-black/5 dark:border-white/5"></div>
+	<!-- LEAF 2: THE TRANSITION SWEEP (Always in DOM) -->
+	<!-- Higher Z-index, specifically for switching chapters. -->
+	<div class="leaf leaf-sweep absolute w-1/2 h-[568px] right-0 top-[20px] origin-left preserve-3d z-[200] 
+		{isNextFlipping ? 'is-active-flip' : ''} {resetTransitionLeaf ? 'no-transition' : ''}"
+		style="transition: transform 1.0s cubic-bezier(0.645, 0.045, 0.355, 1);">
+		
+		<div class="leaf-side leaf-front bg-white dark:bg-[#323236] rounded-r-2xl border-y border-r border-black/10 shadow-[-20px_20px_60px_rgba(0,0,0,0.35)]">
+			<div class="absolute inset-0 bg-linear-to-r from-black/5 via-transparent to-transparent"></div>
+			<!-- Subtle loading or turn hint -->
+			<div class="absolute inset-x-0 bottom-12 flex justify-center opacity-10">
+				<p class="text-[10px] uppercase tracking-[1em] font-black italic">Next Page</p>
+			</div>
+		</div>
+
+		<div class="leaf-side leaf-back bg-white dark:bg-[#1e1e22] rounded-l-2xl border-y border-l border-black/10 shadow-inner">
+			<div class="absolute inset-0 bg-linear-to-l from-white/10 via-transparent to-transparent"></div>
+		</div>
+	</div>
+
+	<!-- SPINE DETAIL -->
+	<div class="absolute left-1/2 top-4 bottom-4 w-12 -ml-6 bg-linear-to-r from-black/25 via-black/50 to-black/25 z-[300] pointer-events-none opacity-60 mix-blend-multiply border-x border-white/5"></div>
 </div>
 
 <style>
-	.perspective {
-		perspective: 2500px;
-	}
-	.preserve-3d {
-		transform-style: preserve-3d;
-	}
-	.origin-left {
-		transform-origin: left center;
-	}
+	.perspective { perspective: 2500px; }
+	.preserve-3d { transform-style: preserve-3d; }
 	
-	.book-page-box {
-		/* Apply smooth flip exactly as in requested HTML */
-		transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
-	}
-	.book-page-box.is-flipped {
-		transform: rotateY(-180deg);
-	}
+	.leaf { transform-origin: left center; transform-style: preserve-3d; pointer-events: none; }
+	.leaf * { pointer-events: auto; }
 	
-	/* Static Left Page */
-	.rotate-left-base {
-		transform: rotateY(-180deg);
+	.leaf-reveal.is-flipped { transform: rotateY(-180deg); }
+	.leaf-reveal.invisible-jump { transition: none !important; }
+	
+	.leaf-sweep { transform: rotateY(0deg); opacity: 0; visibility: hidden; }
+	.leaf-sweep.is-active-flip { 
+		transform: rotateY(-180deg); 
+		opacity: 1; 
+		visibility: visible;
+		/* Adding a slight 3D depth pop to avoid 'stiffness' */
+		animation: depth-pop 1.0s ease-in-out forwards;
 	}
+	.leaf-sweep.no-transition { transition: none !important; opacity: 0 !important; visibility: hidden !important; }
 
-	.book-page {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		backface-visibility: hidden;
-		-webkit-backface-visibility: hidden;
+	@keyframes depth-pop {
+		0% { transform: rotateY(0deg) translateZ(0px); }
+		50% { transform: rotateY(-90deg) translateZ(140px) scale(1.05); }
+		100% { transform: rotateY(-180deg) translateZ(0px); }
 	}
 	
-	.page-front {
-		transform: rotateY(0deg);
-	}
-	.page-back {
-		transform: rotateY(180deg);
-	}
+	.leaf-side { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+	.leaf-front { z-index: 2; transform: rotateY(0deg); }
+	.leaf-back { z-index: 1; transform: rotateY(180deg); }
 
-	/* Scrollbar rules */
+	.animate-spin-extra-slow { animation: spin 80s linear infinite; }
+	@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+	
+	.custom-scrollbar {
+		scrollbar-width: thin;
+		scrollbar-color: rgba(122, 100, 84, 0.55) rgba(90, 80, 72, 0.12);
+	}
 	.custom-scrollbar::-webkit-scrollbar {
-		width: 5px;
+		width: 10px;
 	}
 	.custom-scrollbar::-webkit-scrollbar-track {
-		background: transparent;
+		background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.06));
+		border-radius: 999px;
+		box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 	}
 	.custom-scrollbar::-webkit-scrollbar-thumb {
-		background: rgba(150, 150, 150, 0.3);
-		border-radius: 10px;
+		background: linear-gradient(to bottom, rgba(166, 138, 117, 0.78), rgba(133, 111, 95, 0.88));
+		border-radius: 999px;
+		border: 2px solid rgba(255, 255, 255, 0.12);
 	}
 	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-		background: rgba(150, 150, 150, 0.5);
+		background: linear-gradient(to bottom, rgba(186, 153, 129, 0.88), rgba(150, 123, 105, 0.95));
 	}
+	.no-scrollbar::-webkit-scrollbar { width: 0; height: 0; }
+	.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 </style>
