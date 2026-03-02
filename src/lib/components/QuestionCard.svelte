@@ -7,7 +7,7 @@
 		onReview = () => {}
 	} = $props<{
 		question: { id: number; title: string; content: string; answer: string; state: number; reps: number; };
-		onReview?: (rating: number) => void;
+		onReview?: (rating: number) => void | Promise<void>;
 	}>();
 
 	// INTERNAL DATA
@@ -31,14 +31,15 @@
 
 	async function handleReview(rating: number) {
 		if (isNextFlipping) return;
+		const FLIP_TOTAL_MS = 900;
+		const FLIP_HALF_MS = Math.floor(FLIP_TOTAL_MS / 2);
 		
 		// 1. START FLIP
 		isNextFlipping = true;
 
 		// 2. MID-POINT (Wait for sheet to be vertical)
-		setTimeout(() => {
-			onReview(rating);
-			displayedQuestion = question;
+		setTimeout(async () => {
+			await Promise.resolve(onReview(rating));
 			
 			// Reset the 'Reveal Leaf' while hidden
 			showAnswer = false;
@@ -51,8 +52,8 @@
 				setTimeout(() => {
 					resetTransitionLeaf = false;
 				}, 50);
-			}, 500);
-		}, 500);
+			}, FLIP_HALF_MS);
+		}, FLIP_HALF_MS);
 	}
 
 	function handleReveal() {
@@ -161,7 +162,7 @@
 	<!-- Higher Z-index, specifically for switching chapters. -->
 	<div class="leaf leaf-sweep absolute w-1/2 h-[568px] right-0 top-[20px] origin-left preserve-3d z-[200] 
 		{isNextFlipping ? 'is-active-flip' : ''} {resetTransitionLeaf ? 'no-transition' : ''}"
-		style="transition: transform 1.0s cubic-bezier(0.645, 0.045, 0.355, 1);">
+		style="transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1);">
 		
 		<div class="leaf-side leaf-front bg-white dark:bg-[#323236] rounded-r-2xl border-y border-r border-black/10 shadow-[-20px_20px_60px_rgba(0,0,0,0.35)]">
 			<div class="absolute inset-0 bg-linear-to-r from-black/5 via-transparent to-transparent"></div>
@@ -195,16 +196,8 @@
 		transform: rotateY(-180deg); 
 		opacity: 1; 
 		visibility: visible;
-		/* Adding a slight 3D depth pop to avoid 'stiffness' */
-		animation: depth-pop 1.0s ease-in-out forwards;
 	}
 	.leaf-sweep.no-transition { transition: none !important; opacity: 0 !important; visibility: hidden !important; }
-
-	@keyframes depth-pop {
-		0% { transform: rotateY(0deg) translateZ(0px); }
-		50% { transform: rotateY(-90deg) translateZ(140px) scale(1.05); }
-		100% { transform: rotateY(-180deg) translateZ(0px); }
-	}
 	
 	.leaf-side { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 	.leaf-front { z-index: 2; transform: rotateY(0deg); }
