@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+@plugin "@tailwindcss/typography";
+
+/* Claude Code Theme Inspiration */
+@theme {
+  --color-base: #1e1e1e;
+  --color-surface: #2d2d2d;
+  --color-surface-hover: #3d3d3d;
+  
+  --color-primary: #f0f0f0;
+  --color-secondary: #9e9e9e;
+  
+  --color-accent: #ff8a65;
+  --color-accent-hover: #ff7043;
+  
+  --color-danger: #ef5350;
+  --color-success: #66bb6a;
+  --color-warning: #ffca28;
+  
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-sans: "Inter", system-ui, sans-serif;
+  
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-full: 9999px;
+  
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@layer base {
+  :root {
+    --background: var(--color-base);
+    --foreground: var(--color-primary);
+  }
+  
+  body {
+    @apply bg-[var(--background)] text-[var(--foreground)] font-sans antialiased min-h-screen flex flex-col selection:bg-accent/30 selection:text-white;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface/80 backdrop-blur-md border border-white/10;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+  }
+}

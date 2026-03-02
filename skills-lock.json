@@ -1,10 +1,25 @@
 {
   "version": 1,
   "skills": {
+    "context7": {
+      "source": "intellectronica/agent-skills",
+      "sourceType": "github",
+      "computedHash": "fccbea654f8e35824a8bdce3e059e206efeb6c1fab9f6c096c3867e761081983"
+    },
+    "context7-auto-research": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "d8c3dcb2b2b1fa45279241755ea1b1d94e9f844764f4594e26df8c8f96103c37"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
+    "frontend-design-system": {
+      "source": "supercent-io/skills-template",
+      "sourceType": "github",
+      "computedHash": "5c20c46162ec89c01473e55f66d9b79f5c8f0ec38d8b3d5386a0c47634ff239e"
     },
     "svelte-code-writer": {
       "source": "sveltejs/mcp",
@@ -15,6 +30,11 @@
       "source": "ejirocodes/agent-skills",
       "sourceType": "github",
       "computedHash": "bfcbba3d355aede6f6be9720f195206d4dcaa7c152787ea00c06cb4a1ac44ba4"
+    },
+    "ui-animation": {
+      "source": "mblode/agent-skills",
+      "sourceType": "github",
+      "computedHash": "2246d0232b13fcb9b0aea790e2a7716c6db83c547a9588a2114ef0566adacb35"
     },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",

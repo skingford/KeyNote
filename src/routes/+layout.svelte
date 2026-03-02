@@ -13,153 +13,56 @@
 	}
 </script>
 
-<!-- We don't import app.scss here because svelte.config.js is already prepending it for SCSS variables 
-     but we need to ensure the reset and global styles actually take effect in the browser. 
-     Usually, an app.css or app.scss is imported in layout to apply globally. -->
 <script module>
-	// This ensures the global app.scss is loaded into the bundle
-	import '../app.scss';
+	import '../app.css';
 </script>
 
-<div class="app-layout">
-	<nav class="navbar">
-		<div class="nav-content">
-			<a href="/" class="brand" onclick={closeMenu}>KeyNote</a>
+<div class="min-h-screen flex flex-col bg-base text-primary font-sans selection:bg-accent/30">
+	<nav class="sticky top-0 z-50 glass border-b border-white/10 transition-all duration-300">
+		<div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+			<a href="/" class="text-xl font-bold tracking-tight text-white hover:text-accent transition-colors" onclick={closeMenu}>
+				Key<span class="text-accent">Note</span>
+			</a>
 			
-			<button class="menu-toggle" onclick={toggleMenu} aria-label="Toggle menu">
+			<button class="md:hidden text-secondary hover:text-white transition-colors" onclick={toggleMenu} aria-label="Toggle menu">
 				{#if isMenuOpen}
-					✕
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 				{:else}
-					☰
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
 				{/if}
 			</button>
 
-			<ul class="nav-links" class:open={isMenuOpen}>
+			<ul class="
+				{isMenuOpen ? 'flex' : 'hidden'} 
+				absolute top-full left-0 right-0 glass flex-col p-4 gap-4 border-b border-white/10
+				md:static md:flex md:flex-row md:p-0 md:bg-transparent md:border-none md:gap-8 md:backdrop-blur-none
+			">
 				<li>
-					<a href="/" class:active={$page.url.pathname === '/'} onclick={closeMenu}>
-						首页
+					<a href="/" 
+					   class="block text-sm font-medium transition-colors hover:text-white {$page.url.pathname === '/' ? 'text-white' : 'text-secondary'}" 
+					   onclick={closeMenu}>
+						Overview
 					</a>
 				</li>
 				<li>
-					<a href="/study" class:active={$page.url.pathname === '/study'} onclick={closeMenu}>
-						背题
+					<a href="/study" 
+					   class="block text-sm font-medium transition-colors hover:text-white {$page.url.pathname === '/study' ? 'text-white' : 'text-secondary'}" 
+					   onclick={closeMenu}>
+						Study
 					</a>
 				</li>
 				<li>
-					<a href="/questions" class:active={$page.url.pathname === '/questions'} onclick={closeMenu}>
-						题库
+					<a href="/questions" 
+					   class="block text-sm font-medium transition-colors hover:text-white {$page.url.pathname === '/questions' ? 'text-white' : 'text-secondary'}" 
+					   onclick={closeMenu}>
+						Library
 					</a>
 				</li>
 			</ul>
 		</div>
 	</nav>
 
-	<main class="main-content">
+	<main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
 		{@render children()}
 	</main>
 </div>
-
-<style lang="scss">
-	.app-layout {
-		min-height: 100vh;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.navbar {
-		background: var(--surface);
-		border-bottom: 1px solid rgba(255,255,255,0.05);
-		position: sticky;
-		top: 0;
-		z-index: 100;
-	}
-
-	.nav-content {
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 1rem 2rem;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.brand {
-		font-size: 1.5rem;
-		font-weight: bold;
-		color: var(--primary);
-		text-decoration: none;
-		&:hover { text-decoration: none; }
-	}
-
-	.menu-toggle {
-		display: none;
-		background: none;
-		border: none;
-		color: var(--text);
-		font-size: 1.5rem;
-		cursor: pointer;
-
-		@include mobile {
-			display: block;
-		}
-	}
-
-	.nav-links {
-		list-style: none;
-		display: flex;
-		gap: 2rem;
-		margin: 0;
-		padding: 0;
-
-		@include mobile {
-			display: none;
-			position: absolute;
-			top: 100%;
-			left: 0;
-			right: 0;
-			background: var(--surface);
-			flex-direction: column;
-			gap: 0;
-			border-bottom: 1px solid rgba(255,255,255,0.05);
-			
-			&.open {
-				display: flex;
-			}
-		}
-
-		li {
-			@include mobile {
-				width: 100%;
-			}
-		}
-
-		a {
-			color: var(--text-muted);
-			font-weight: 500;
-			padding: 0.5rem 0;
-			display: block;
-			
-			@include mobile {
-				padding: 1rem 2rem;
-				border-top: 1px solid rgba(255,255,255,0.05);
-			}
-
-			&:hover, &.active {
-				color: var(--primary);
-				text-decoration: none;
-			}
-		}
-	}
-
-	.main-content {
-		flex: 1;
-		width: 100%;
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 2rem;
-
-		@include mobile {
-			padding: 1rem;
-		}
-	}
-</style>
