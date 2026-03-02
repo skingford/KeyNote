@@ -1,6 +1,14 @@
 import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { questions } from '$lib/server/db/schema';
+import { categories, questions } from '$lib/server/db/schema';
+import { syncCategoriesFromQuestions } from '$lib/server/categories';
+import { asc } from 'drizzle-orm';
+
+export async function load() {
+	await syncCategoriesFromQuestions();
+	const allCategories = await db.select().from(categories).orderBy(asc(categories.name));
+	return { categories: allCategories };
+}
 
 export const actions = {
 	default: async ({ request }) => {
@@ -20,6 +28,11 @@ export const actions = {
 						category: p.category || '未分类'
 					}));
 					await db.insert(questions).values(values);
+					const categoryValues = Array.from(new Set(values.map((v) => (v.category || '未分类').trim()).filter(Boolean)))
+						.map((name) => ({ name }));
+					if (categoryValues.length > 0) {
+						await db.insert(categories).values(categoryValues).onConflictDoNothing();
+					}
 				} else {
 					return fail(400, { error: 'JSON must be an array' });
 				}
@@ -72,6 +85,11 @@ export const actions = {
 
 				if (values.length > 0) {
 					await db.insert(questions).values(values);
+					const categoryValues = Array.from(new Set(values.map((v) => (v.category || '未分类').trim()).filter(Boolean)))
+						.map((name) => ({ name }));
+					if (categoryValues.length > 0) {
+						await db.insert(categories).values(categoryValues).onConflictDoNothing();
+					}
 				} else {
 					return fail(400, { error: 'No valid markdown blocks found' });
 				}
@@ -79,6 +97,30 @@ export const actions = {
 			return { success: true };
 		} catch (err: any) {
 			return fail(400, { error: err.message || 'Failed to parse or save data' });
+		}
+	},
+	create: async ({ request }) => {
+		const data = await request.formData();
+		const title = String(data.get('title') || '').trim();
+		const category = String(data.get('category') || '未分类').trim() || '未分类';
+		const content = String(data.get('content') || '').trim();
+		const answer = String(data.get('answer') || '').trim();
+
+		if (!title) return fail(400, { error: '标题不能为空' });
+		if (!content) return fail(400, { error: '问题内容不能为空' });
+		if (!answer) return fail(400, { error: '答案内容不能为空' });
+
+		try {
+			await db.insert(categories).values({ name: category }).onConflictDoNothing();
+			await db.insert(questions).values({
+				title,
+				category,
+				content,
+				answer
+			});
+			return { success: true };
+		} catch (err: any) {
+			return fail(400, { error: err.message || '创建题目失败' });
 		}
 	}
 };

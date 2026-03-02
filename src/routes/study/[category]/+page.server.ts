@@ -13,7 +13,7 @@ export async function load({ params }) {
 		.where(
 			and(
 				eq(questions.category, category),
-				or(lte(questions.nextReviewAt, now), isNull(questions.nextReviewAt))
+				or(lte(questions.due, now), isNull(questions.due))
 			)
 		)
 		.limit(20);

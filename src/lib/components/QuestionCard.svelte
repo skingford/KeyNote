@@ -1,99 +1,187 @@
 <script lang="ts">
-	import { slide, fade } from 'svelte/transition';
 	import MarkdownView from './MarkdownView.svelte';
 
 	let {
 		question,
 		onReview = () => {}
 	} = $props<{
-		question: { id: number; title: string; content: string; answer: string; level: number };
-		onReview?: (level: number) => void;
+		question: { id: number; title: string; content: string; answer: string; state: number; reps: number; };
+		onReview?: (rating: number) => void;
 	}>();
 
 	let showAnswer = $state(false);
+	let answerContent = $derived((question.answer ?? '').trim());
 
-	function handleReview(level: number) {
-		onReview(level);
+	function handleReview(rating: number) {
+		onReview(rating);
 	}
-
-	// Reset showAnswer when question changes
-	$effect(() => {
-		question.id;
-		showAnswer = false;
-	});
 </script>
 
-<div class="w-full max-w-4xl glass rounded-2xl overflow-hidden shadow-2xl border border-white/5 flex flex-col transition-all duration-300 mx-auto">
-	<!-- Question Front -->
-	<div class="p-6 md:p-10 relative bg-gradient-to-br from-surface to-base">
-		<div class="absolute top-6 right-6 px-3 py-1 text-xs font-mono rounded bg-surface-hover text-secondary border border-white/5 uppercase tracking-wider">
-			LVL {question.level}
-		</div>
-		<h2 class="text-2xl md:text-3xl font-bold mb-6 tracking-tight leading-tight pr-16">{question.title}</h2>
-		
-		{#if question.content && question.content.trim().length > 0}
-			<div class="mt-4 text-base opacity-90">
-				<MarkdownView content={question.content} />
+<div class="book-wrapper w-full max-w-4xl h-[550px] mx-auto relative preserve-3d perspective">
+	
+	<!-- Book Background Spread -->
+	<!-- Left Base Page (Pastel Pink) -->
+	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d rotate-left-base z-0">
+		<div class="book-page page-front bg-[#fcdede] dark:bg-[#4a2e35] rounded-l-2xl border border-black/10 dark:border-white/10 p-8 flex flex-col items-center justify-center overflow-hidden">
+			<!-- Cute graphic or prompt -->
+			<div class="opacity-50 flex flex-col items-center gap-4 text-primary">
+				<div class="text-7xl font-serif font-black italic mb-2 brightness-90">?</div>
+				<p class="font-medium tracking-[0.2em] uppercase text-sm font-sans">Thinking Mode</p>
 			</div>
-		{/if}
+		</div>
 	</div>
 
-	<!-- Action / Answer reveal button -->
-	{#if !showAnswer}
-		<button
-			class="w-full py-5 bg-surface hover:bg-surface-hover text-accent hover:text-accent-hover font-medium transition-colors border-t border-white/5 flex justify-center items-center gap-3 cursor-pointer outline-none focus:bg-surface-hover group"
-			onclick={() => (showAnswer = true)}
-			in:fade={{ duration: 150 }}
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transition-transform group-hover:translate-y-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-			<span class="tracking-wide">遮挡自测：点击显示答案</span>
-		</button>
-	{/if}
+	<!-- Right Base Page (Pastel Mint/Teal - Answer Page) -->
+	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d z-0">
+		<div class="book-page page-front bg-[#c1ede4] dark:bg-[#20403c] rounded-r-2xl border y border-r border-black/10 dark:border-white/10 p-6 md:p-8 flex flex-col">
+			<h3 class="text-xs text-secondary/80 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
+				<span class="w-2 h-2 rounded-full bg-success opacity-80 animate-pulse"></span>
+				参考答案 (Answer)
+			</h3>
+			
+			<div class="grow overflow-y-auto pr-2 custom-scrollbar">
+				<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-800 dark:text-gray-200">
+					{#if answerContent.length > 0}
+						<MarkdownView content={answerContent} />
+					{:else}
+						<p class="text-secondary/70 italic text-sm">该题暂未配置答案内容。</p>
+					{/if}
+				</div>
+			</div>
 
-	<!-- Answer Back -->
-	{#if showAnswer}
-		<div class="border-t border-white/10 bg-surface/40 p-6 md:p-10" transition:slide={{ duration: 400, axis: 'y', easing: (t) => t * t * (2.4 - 1.4 * t) }}> <!-- basic ease-out -->
-			<div class="opacity-0 animate-[fade-in_0.4s_ease-out_0.2s_forwards]">
-				<h3 class="text-sm text-secondary uppercase tracking-widest font-bold mb-5 flex items-center gap-3">
-					<span class="w-2.5 h-2.5 rounded-full bg-success shadow-[0_0_10px_rgba(102,187,106,0.6)] animate-pulse"></span>
-					参考答案
-				</h3>
-				<div class="bg-base/50 p-6 md:p-8 rounded-xl border border-white/5">
-					<MarkdownView content={question.answer} />
+			<!-- Review Actions -->
+			<div class="mt-6 pt-4 border-t border-black/10 dark:border-white/10 flex flex-col gap-3 z-20">
+				<div class="text-[11px] text-center text-secondary/70 mb-1 font-bold tracking-wider uppercase">评估掌握程度，并进入下一题</div>
+				<div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+					<button onclick={() => handleReview(1)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 transition-all hover:scale-[1.03]">
+						<span class="font-bold text-sm">重来</span><span class="text-[9px] opacity-70">Again</span>
+					</button>
+					<button onclick={() => handleReview(2)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-warning/10 hover:bg-warning/20 text-warning border border-warning/20 transition-all hover:scale-[1.03]">
+						<span class="font-bold text-sm">困难</span><span class="text-[9px] opacity-70">Hard</span>
+					</button>
+					<button onclick={() => handleReview(3)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-success/10 hover:bg-success/20 text-success border border-success/20 transition-all hover:scale-[1.03]">
+						<span class="font-bold text-sm">良好</span><span class="text-[9px] opacity-70">Good</span>
+					</button>
+					<button onclick={() => handleReview(4)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-info/10 hover:bg-info/20 text-info border border-info/20 transition-all hover:scale-[1.03]">
+						<span class="font-bold text-sm">简单</span><span class="text-[9px] opacity-70">Easy</span>
+					</button>
 				</div>
 			</div>
 		</div>
+	</div>
 
-		<!-- Review Actions -->
-		<div class="flex flex-col sm:flex-row bg-surface-hover/80 p-3 sm:p-5 gap-3 border-t border-white/5" transition:slide={{ duration: 300, axis: 'y' }}>
-			<button
-				onclick={() => handleReview(0)}
-				class="py-3 px-4 rounded-xl bg-surface hover:bg-danger/20 hover:text-danger hover:border-danger/30 border border-transparent text-secondary transition-all font-medium text-sm md:text-base cursor-pointer flex-1 flex flex-col items-center justify-center gap-1 group"
-			>
-				<span class="text-white group-hover:text-danger transition-colors">生疏</span>
-				<span class="text-xs opacity-60">12小时后复习</span>
-			</button>
-			<button
-				onclick={() => handleReview(1)}
-				class="py-3 px-4 rounded-xl bg-surface hover:bg-warning/20 hover:text-warning hover:border-warning/30 border border-transparent text-secondary transition-all font-medium text-sm md:text-base cursor-pointer flex-1 flex flex-col items-center justify-center gap-1 group"
-			>
-				<span class="text-white group-hover:text-warning transition-colors">模糊</span>
-				<span class="text-xs opacity-60">3天后复习</span>
-			</button>
-			<button
-				onclick={() => handleReview(2)}
-				class="py-3 px-4 rounded-xl bg-surface hover:bg-success/20 hover:text-success hover:border-success/30 border border-transparent text-secondary transition-all font-medium text-sm md:text-base cursor-pointer flex-1 flex flex-col items-center justify-center gap-1 group"
-			>
-				<span class="text-white group-hover:text-success transition-colors">掌握</span>
-				<span class="text-xs opacity-60">7天后复习</span>
+	<!-- 翻动的书叶 (Flipping Leaf) -->
+	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d transition-transform duration-[800ms] ease-in-out z-10 {showAnswer ? 'is-flipped' : ''}">
+		
+		<!-- 叶片正面: 题目 (Front of the leaf: Question) -->
+		<div class="book-page page-front bg-[#ffffff] dark:bg-[#2c2c30] rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 shadow-[8px_5px_20px_rgba(0,0,0,0.08)] p-6 md:p-8 flex flex-col">
+			<div class="flex justify-between items-start mb-6">
+				<div class="px-2.5 py-1 text-[10px] font-mono rounded bg-black/5 dark:bg-white/10 text-secondary uppercase tracking-wider">
+					Study Card
+				</div>
+				<div class="text-[10px] font-mono text-secondary/60 uppercase tracking-widest flex gap-2">
+					<span class="text-primary/70 font-semibold">S{question.state}</span>
+					<span>•</span>
+					<span>R{question.reps}</span>
+				</div>
+			</div>
+
+			<h2 class="text-xl md:text-2xl font-bold mb-6 tracking-tight leading-snug text-gray-900 dark:text-gray-100 font-serif">
+				{question.title}
+			</h2>
+			
+			<div class="grow overflow-y-auto pr-2 custom-scrollbar">
+				{#if question.content && question.content.trim().length > 0}
+					<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+						<MarkdownView content={question.content} />
+					</div>
+				{/if}
+			</div>
+
+			<div class="mt-6 pt-4 border-t border-black/5 dark:border-white/5 flex justify-center">
+				<button
+					class="px-8 py-3.5 rounded-full bg-[#111] dark:bg-white text-white dark:text-black font-bold shadow-lg transition-all hover:-translate-y-1 hover:scale-105 active:scale-95 flex items-center gap-3 group"
+					onclick={() => (showAnswer = true)}
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform group-hover:translate-x-1 duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+					翻书查看答案
+				</button>
+			</div>
+		</div>
+
+		<!-- 叶片背面 (Back of the leaf) -->
+		<div class="book-page page-back bg-[#fcfaf2] dark:bg-[#25252a] rounded-l-2xl border-y border-l border-black/10 dark:border-white/10 shadow-[-8px_5px_20px_rgba(0,0,0,0.08)] p-8 flex flex-col items-center justify-center gap-6">
+			<div class="w-16 h-16 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center">
+				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-secondary opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M18 3v18"/><path d="M6 3h12"/><path d="M6 21h12"/><path d="M9 12h6"/></svg>
+			</div>
+			<div class="opacity-40 text-center font-serif text-secondary max-w-xs">
+				<p class="text-xs uppercase tracking-[0.2em] mb-3 font-sans opacity-70">Question Details</p>
+				<h3 class="text-lg italic line-clamp-4 leading-relaxed">"{question.title}"</h3>
+			</div>
+			
+			<button class="mt-8 px-5 py-2 rounded-full border border-black/20 dark:border-white/20 text-secondary hover:bg-black/5 dark:hover:bg-white/5 text-xs tracking-wider uppercase transition font-semibold" onclick={() => showAnswer = false}>
+				← 翻转回题目
 			</button>
 		</div>
-	{/if}
+	</div>
+
+	<!-- Book Spine Highlight/Shadow -->
+	<div class="absolute left-1/2 top-0 bottom-0 w-8 -ml-4 bg-linear-to-r from-transparent via-black/15 dark:via-black/40 to-transparent pointer-events-none z-20 mix-blend-multiply border-x border-black/5 dark:border-white/5"></div>
 </div>
 
 <style>
-	@keyframes fade-in {
-		from { opacity: 0; transform: translateY(15px); }
-		to { opacity: 1; transform: translateY(0); }
+	.perspective {
+		perspective: 2500px;
+	}
+	.preserve-3d {
+		transform-style: preserve-3d;
+	}
+	.origin-left {
+		transform-origin: left center;
+	}
+	
+	.book-page-box {
+		/* Apply smooth flip exactly as in requested HTML */
+		transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+	}
+	.book-page-box.is-flipped {
+		transform: rotateY(-180deg);
+	}
+	
+	/* Static Left Page */
+	.rotate-left-base {
+		transform: rotateY(-180deg);
+	}
+
+	.book-page {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+	}
+	
+	.page-front {
+		transform: rotateY(0deg);
+	}
+	.page-back {
+		transform: rotateY(180deg);
+	}
+
+	/* Scrollbar rules */
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 5px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background: rgba(150, 150, 150, 0.3);
+		border-radius: 10px;
+	}
+	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		background: rgba(150, 150, 150, 0.5);
 	}
 </style>

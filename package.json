@@ -34,7 +34,9 @@
 		"better-sqlite3": "^12.6.2",
 		"drizzle-orm": "^0.45.1",
 		"marked": "^17.0.3",
+		"mermaid": "^11.12.3",
 		"prismjs": "^1.30.0",
-		"tailwindcss-animate": "^1.0.7"
+		"tailwindcss-animate": "^1.0.7",
+		"ts-fsrs": "^5.2.3"
 	}
 }

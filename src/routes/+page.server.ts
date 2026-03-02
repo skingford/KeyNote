@@ -19,7 +19,7 @@ export async function load() {
 	const due = await db
 		.select({ count: sql<number>`count(${questions.id})`.mapWith(Number).as('count') })
 		.from(questions)
-		.where(sql`${questions.nextReviewAt} <= ${now} OR ${questions.nextReviewAt} IS NULL`);
+		.where(sql`${questions.due} <= ${now} OR ${questions.due} IS NULL`);
 
 	return {
 		categories: counts,
