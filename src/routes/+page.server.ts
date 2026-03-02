@@ -1,29 +1,28 @@
 import { db } from '$lib/server/db';
-import { questions, cards } from '$lib/server/schema';
-import { eq, lte, or, isNull } from 'drizzle-orm';
-import { getTodayDateString } from '$lib/server/srs';
+import { questions } from '$lib/server/db/schema';
+import { sql } from 'drizzle-orm';
 
 export async function load() {
-	const today = getTodayDateString();
-
-	const dueCards = db
+	// Group questions by category and count them
+	const counts = await db
 		.select({
-			category: questions.category
+			category: questions.category,
+			count: sql<number>`count(${questions.id})`.mapWith(Number).as('count')
 		})
-		.from(cards)
-		.innerJoin(questions, eq(cards.question_id, questions.id))
-		.where(or(lte(cards.due_date, today), isNull(cards.due_date)))
-		.all();
+		.from(questions)
+		.groupBy(questions.category);
 
-	const totalDue = dueCards.length;
+	// Also get total pending reviews (due)
+	const now = new Date().getTime();
 	
-	const stats = dueCards.reduce((acc, card) => {
-		acc[card.category] = (acc[card.category] || 0) + 1;
-		return acc;
-	}, {} as Record<string, number>);
+	// Drizzle sqlite returns timestamps as ms when using {mode: timestamp} correctly, but safe to check null
+	const due = await db
+		.select({ count: sql<number>`count(${questions.id})`.mapWith(Number).as('count') })
+		.from(questions)
+		.where(sql`${questions.nextReviewAt} <= ${now} OR ${questions.nextReviewAt} IS NULL`);
 
 	return {
-		totalDue,
-		stats
+		categories: counts,
+		dueCount: due[0]?.count || 0
 	};
 }

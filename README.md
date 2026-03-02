@@ -1,42 +1,32 @@
-# sv
+# Go+ 架构 背题网站
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+专为 Go 语言与分布式架构设计的单机高颜值极简背题工具。
 
-## Creating a project
+## 🎯 功能特性
+- **本地优先**：使用 SvelteKit + SQLite (Better-SQLite3) 实现，纯本地运行，不再担心云端同步丢失。
+- **极简深色主题**：Tailwind CSS v4 驱动，引入精美的微动画和毛玻璃特效，极简而不简单。
+- **特化渲染**：依靠 \`marked\` + \`prismjs\` 提供 Go/SQL/Bash 等语法高亮，专门优化了【架构对比表】的阅读体验。
+- **间隔重复**：内建极简 Anki 风格生疏(12h)、模糊(3d)、掌握(7d)间隔重复算法。
+- **急速导入**：支持标准 JSON 数据集或极简自定义 Markdown 模板导入（告别复杂的图形界面录题）。
 
-If you're seeing this, you've probably already done this step. Congrats!
+## 🚀 极速开启
+\`\`\`bash
+# 1. 安装核心依赖
+npm install
 
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.12.4 create --template minimal --types ts --no-install .
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
+# 2. 启动服务 (默认访问 http://localhost:5173)
 npm run dev -- --open
-```
+\`\`\`
 
-## Building
+> 预装提示：数据库架构已随 \`npm run db:push\` 生成，直接运行即可。如果没有看到数据，可以进入 \`http://localhost:5173/import\` 粘贴测试模板。
 
-To create a production version of your app:
+## 💾 一键备份指南 (防丢失)
 
-```sh
-npm run build
-```
+由于是纯单机本地项目，所有的题库内容、知识分类与复习进度均存储在根目录下的一张表中：\`sqlite.db\`。
 
-You can preview the production build with `npm run preview`.
+**备份方法：**
+1. 定期直接复制/打包项目根目录下的 \`sqlite.db\` 文件。
+2. 将其保存到您的自建 NAS、iCloud 或物理 U 盘上。
+3. 日后如需迁移电脑，重新 Clone 代码后，只需将 \`sqlite.db\` 粘贴回根目录，数据瞬间无损恢复。
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+> 注：如果在开发模式下需要查看数据表实体内容，可运行 \`npm run db:studio\` 启动 Drizzle 可视化看板。
