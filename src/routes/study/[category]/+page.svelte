@@ -19,19 +19,22 @@
 	let canGoPrev = $derived(totalQuestions > 0 && currentIndex > 0 && !isFinished);
 	let canGoNext = $derived(totalQuestions > 0 && currentIndex < totalQuestions - 1 && !isFinished);
 
-	async function handleReview(rating: number) {
+	function handleReview(rating: number) {
 		if (!currentQuestion) return;
+		const reviewedQuestionId = currentQuestion.id;
 
-		// Post response
-		await fetch('/api/review', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ id: currentQuestion.id, rating })
-		});
-
-		// Move next
+		// Optimistically move to next question first to keep page-turn smooth
 		navDirection = 1;
 		currentIndex++;
+
+		// Send review in background; do not block UI transition
+		fetch('/api/review', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ id: reviewedQuestionId, rating })
+		}).catch(() => {
+			// Ignore transient network failures in UI flow; next refresh will reconcile schedule
+		});
 	}
 
 	function goToIndex(index: number) {

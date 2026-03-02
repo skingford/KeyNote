@@ -1,6 +1,6 @@
 <script lang="ts">
 	import MarkdownView from './MarkdownView.svelte';
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 
 	let {
 		question,
@@ -40,6 +40,11 @@
 		// 2. MID-POINT (Wait for sheet to be vertical)
 		setTimeout(async () => {
 			await Promise.resolve(onReview(rating));
+			// Ensure parent prop has been flushed, then swap chapter content at flip mid-point
+			await tick();
+			if (question?.id) {
+				displayedQuestion = question;
+			}
 			
 			// Reset the 'Reveal Leaf' while hidden
 			showAnswer = false;
@@ -164,16 +169,16 @@
 		{isNextFlipping ? 'is-active-flip' : ''} {resetTransitionLeaf ? 'no-transition' : ''}"
 		style="transition: transform 0.9s cubic-bezier(0.645, 0.045, 0.355, 1);">
 		
-		<div class="leaf-side leaf-front bg-white dark:bg-[#323236] rounded-r-2xl border-y border-r border-black/10 shadow-[-20px_20px_60px_rgba(0,0,0,0.35)]">
-			<div class="absolute inset-0 bg-linear-to-r from-black/5 via-transparent to-transparent"></div>
+		<div class="leaf-side leaf-front rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 shadow-[-10px_16px_36px_rgba(0,0,0,0.22)] bg-linear-to-r from-black/10 via-black/3 to-transparent">
+			<div class="absolute inset-0 bg-linear-to-r from-black/10 via-transparent to-white/5 dark:to-black/10"></div>
 			<!-- Subtle loading or turn hint -->
-			<div class="absolute inset-x-0 bottom-12 flex justify-center opacity-10">
+			<div class="absolute inset-x-0 bottom-12 flex justify-center opacity-20">
 				<p class="text-[10px] uppercase tracking-[1em] font-black italic">Next Page</p>
 			</div>
 		</div>
 
-		<div class="leaf-side leaf-back bg-white dark:bg-[#1e1e22] rounded-l-2xl border-y border-l border-black/10 shadow-inner">
-			<div class="absolute inset-0 bg-linear-to-l from-white/10 via-transparent to-transparent"></div>
+		<div class="leaf-side leaf-back rounded-l-2xl border-y border-l border-black/10 dark:border-white/10 shadow-inner bg-linear-to-l from-black/12 via-black/4 to-transparent">
+			<div class="absolute inset-0 bg-linear-to-l from-white/10 dark:from-black/25 via-transparent to-transparent"></div>
 		</div>
 	</div>
 
