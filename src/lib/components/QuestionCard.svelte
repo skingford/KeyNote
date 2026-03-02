@@ -33,14 +33,14 @@
 
 	<!-- Right Base Page (Pastel Mint/Teal - Answer Page) -->
 	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d z-0">
-		<div class="book-page page-front bg-[#c1ede4] dark:bg-[#20403c] rounded-r-2xl border y border-r border-black/10 dark:border-white/10 p-6 md:p-8 flex flex-col">
-			<h3 class="text-xs text-secondary/80 uppercase tracking-widest font-bold mb-4 flex items-center gap-2">
+		<div class="book-page page-front bg-[#c1ede4] dark:bg-[#20403c] rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 pt-6 md:pt-8 pl-6 md:pl-8 pb-6 md:pb-8 pr-0 flex flex-col">
+			<h3 class="text-xs text-secondary/80 uppercase tracking-widest font-bold mb-4 flex items-center gap-2 pr-6 md:pr-8">
 				<span class="w-2 h-2 rounded-full bg-success opacity-80 animate-pulse"></span>
 				参考答案 (Answer)
 			</h3>
 			
-			<div class="grow overflow-y-auto pr-2 custom-scrollbar">
-				<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-800 dark:text-gray-200">
+			<div class="grow overflow-y-auto custom-scrollbar">
+				<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 pr-6 md:pr-8">
 					{#if answerContent.length > 0}
 						<MarkdownView content={answerContent} />
 					{:else}
@@ -50,7 +50,7 @@
 			</div>
 
 			<!-- Review Actions -->
-			<div class="mt-6 pt-4 border-t border-black/10 dark:border-white/10 flex flex-col gap-3 z-20">
+			<div class="mt-6 pt-4 border-t border-black/10 dark:border-white/10 flex flex-col gap-3 z-20 pr-6 md:pr-8">
 				<div class="text-[11px] text-center text-secondary/70 mb-1 font-bold tracking-wider uppercase">评估掌握程度，并进入下一题</div>
 				<div class="grid grid-cols-2 md:grid-cols-4 gap-2">
 					<button onclick={() => handleReview(1)} class="review-btn flex flex-col items-center justify-center p-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-danger border border-danger/20 transition-all hover:scale-[1.03]">
@@ -71,11 +71,11 @@
 	</div>
 
 	<!-- 翻动的书叶 (Flipping Leaf) -->
-	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d transition-transform duration-[800ms] ease-in-out z-10 {showAnswer ? 'is-flipped' : ''}">
+	<div class="book-page-box absolute w-1/2 h-full right-0 origin-left preserve-3d transition-transform duration-800 ease-in-out z-10 {showAnswer ? 'is-flipped' : ''}">
 		
 		<!-- 叶片正面: 题目 (Front of the leaf: Question) -->
-		<div class="book-page page-front bg-[#ffffff] dark:bg-[#2c2c30] rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 shadow-[8px_5px_20px_rgba(0,0,0,0.08)] p-6 md:p-8 flex flex-col">
-			<div class="flex justify-between items-start mb-6">
+		<div class="book-page page-front bg-[#ffffff] dark:bg-[#2c2c30] rounded-r-2xl border-y border-r border-black/10 dark:border-white/10 shadow-[8px_5px_20px_rgba(0,0,0,0.08)] pt-6 md:pt-8 pl-6 md:pl-8 pb-6 md:pb-8 pr-0 flex flex-col">
+			<div class="flex justify-between items-start mb-6 pr-6 md:pr-8">
 				<div class="px-2.5 py-1 text-[10px] font-mono rounded bg-black/5 dark:bg-white/10 text-secondary uppercase tracking-wider">
 					Study Card
 				</div>
@@ -86,19 +86,21 @@
 				</div>
 			</div>
 
-			<h2 class="text-xl md:text-2xl font-bold mb-6 tracking-tight leading-snug text-gray-900 dark:text-gray-100 font-serif">
-				{question.title}
-			</h2>
+			<div class="pr-6 md:pr-8">
+				<h2 class="text-xl md:text-2xl font-bold mb-6 tracking-tight leading-snug text-gray-900 dark:text-gray-100 font-serif">
+					{question.title}
+				</h2>
+			</div>
 			
-			<div class="grow overflow-y-auto pr-2 custom-scrollbar">
+			<div class="grow overflow-y-auto custom-scrollbar">
 				{#if question.content && question.content.trim().length > 0}
-					<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+					<div class="prose prose-sm md:prose-base prose-neutral dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 pr-6 md:pr-8">
 						<MarkdownView content={question.content} />
 					</div>
 				{/if}
 			</div>
 
-			<div class="mt-6 pt-4 border-t border-black/5 dark:border-white/5 flex justify-center">
+			<div class="mt-6 pt-4 border-t border-black/5 dark:border-white/5 flex justify-center pr-6 md:pr-8">
 				<button
 					class="px-8 py-3.5 rounded-full bg-[#111] dark:bg-white text-white dark:text-black font-bold shadow-lg transition-all hover:-translate-y-1 hover:scale-105 active:scale-95 flex items-center gap-3 group"
 					onclick={() => (showAnswer = true)}
