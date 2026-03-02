@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { ArrowLeft, Search, Filter, BookOpen, ChevronDown, Tag } from 'lucide-svelte';
 
 	let { data } = $props();
-	let allQuestions = $state(data.questions);
+	let allQuestions = $derived.by(() => data.questions);
 
 	let selectedCategory = $state<string | null>(null);
 	let selectedTags = $state<Set<string>>(new Set());
@@ -14,7 +15,7 @@
 
 	// Extract unique categories and tags
 	let categories = $derived([...new Set(allQuestions.map(q => q.category))]);
-	let allTags = $derived(() => {
+	let allTags = $derived.by(() => {
 		const tags = new Set<string>();
 		allQuestions.forEach(q => {
 			try {
@@ -76,7 +77,7 @@
 					<p class="text-sm text-secondary">Browse {allQuestions.length} concepts in your database</p>
 				</div>
 			</div>
-			<a href="/" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-secondary hover:text-white bg-surface hover:bg-surface-hover rounded-full border border-white/5 transition-all">
+			<a href={resolve('/')} class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-secondary hover:text-white bg-surface hover:bg-surface-hover rounded-full border border-white/5 transition-all">
 				<ArrowLeft size={16} />
 				Back to Dashboard
 			</a>
@@ -100,7 +101,7 @@
 					>
 						All
 					</button>
-					{#each categories as cat}
+					{#each categories as cat (cat)}
 						<button 
 							class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border uppercase {selectedCategory === cat ? 'bg-primary text-base border-primary' : 'bg-surface-hover text-secondary border-white/5 hover:border-white/20 hover:text-white'}" 
 							onclick={() => selectedCategory = cat}
@@ -120,7 +121,7 @@
 					Tags
 				</div>
 				<div class="flex flex-wrap gap-2">
-					{#each allTags() as tag}
+					{#each allTags as tag (tag)}
 						<button 
 							class="px-2.5 py-1 text-xs font-mono rounded transition-colors border {selectedTags.has(tag) ? 'bg-accent/20 text-accent border-accent/50 shadow-[0_0_10px_rgba(255,138,101,0.2)]' : 'bg-base text-secondary border-white/5 hover:border-accent/30 hover:text-accent/80'}" 
 							onclick={() => toggleTag(tag)}
@@ -132,7 +133,7 @@
 				{#if selectedTags.size > 0}
 					<button 
 						class="mt-4 text-xs text-danger hover:text-danger/80 transition-colors w-full text-left"
-						onclick={() => selectedTags.clear()}
+						onclick={() => selectedTags = new Set()}
 					>
 						Clear all tags
 					</button>
@@ -153,7 +154,6 @@
 				{#each filteredQuestions as q (q.id)}
 					<div 
 						class="bg-surface border transition-all duration-300 rounded-xl overflow-hidden group {expandedId === q.id ? 'border-primary/50 shadow-[0_0_20px_rgba(255,255,255,0.05)]' : 'border-white/5 hover:border-white/20 hover:bg-surface-hover'}"
-						animate:slide={{ duration: 300, easing: cubicOut }}
 					>
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -172,7 +172,7 @@
 							<div class="flex items-center gap-4">
 								<div class="flex items-center gap-2 flex-wrap">
 									<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[10px] font-bold text-secondary uppercase tracking-wider">{q.category}</span>
-									{#each JSON.parse(q.tags || '[]') as tag}
+									{#each JSON.parse(q.tags || '[]') as tag (tag)}
 										<span class="text-accent text-xs font-mono">#{tag}</span>
 									{/each}
 								</div>
@@ -205,9 +205,12 @@
 								</div>
 								
 								<div class="mt-6 flex justify-end">
-									<a href="/study?tags={encodeURIComponent(JSON.parse(q.tags || '[]').join(','))}" class="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-medium transition-colors border border-primary/20">
-										Study related cards
-									</a>
+									<form method="GET" action={resolve('/study')}>
+										<input type="hidden" name="tags" value={JSON.parse(q.tags || '[]').join(',')} />
+										<button type="submit" class="px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-medium transition-colors border border-primary/20">
+											Study related cards
+										</button>
+									</form>
 								</div>
 							</div>
 						{/if}
@@ -219,7 +222,7 @@
 						<p class="text-secondary text-sm">Try adjusting your category or tag filters to see more results.</p>
 						<button 
 							class="mt-6 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors"
-							onclick={() => { selectedCategory = null; selectedTags.clear(); }}
+							onclick={() => { selectedCategory = null; selectedTags = new Set(); }}
 						>
 							Clear all filters
 						</button>
